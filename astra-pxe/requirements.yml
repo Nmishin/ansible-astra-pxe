@@ -1,0 +1,6 @@
+---
+roles:
+  - name: bertvv.dhcp
+    version: 3.2.0
+  - name: ckaserer.tftp
+    version: 2.1.3

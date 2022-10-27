@@ -1,0 +1,5 @@
+[astra-pxe]
+antonina ansible_host=192.168.30.76 ansible_connection=ssh ansible_user=ubuntu
+
+[astra-pxe:vars]
+proxy=

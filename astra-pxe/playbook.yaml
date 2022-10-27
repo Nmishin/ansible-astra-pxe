@@ -1,0 +1,61 @@
+---
+- hosts: all
+  become: true
+  vars:
+    dhcp_global_default_lease_time: 28800   # 8hrs
+    dhcp_global_max_lease_time: 43200       # 12 hrs
+    dhcp_global_subnet_mask: 255.255.255.0
+    dhcp_global_broadcast_address: 192.168.0.255
+    dhcp_global_routers: 192.168.0.1
+    dhcp_global_domain_name: example.com
+    dhcp_global_domain_name_servers:
+      - 8.8.8.8
+    dhcp_global_bootp: allow
+    dhcp_global_booting: allow
+    dhcp_global_next_server: 192.168.0.3
+    dhcp_global_filename: pxelinux.0
+    dhcp6_enable: false
+
+    tftp_root_directory: /srv/tftp
+    
+  roles:
+    - bertvv.dhcp
+    - ckaserer.tftp
+  tasks:
+    - name: Создаем директорию для монтирования образа
+      ansible.builtin.file:
+        path: /srv/repo
+        state: directory
+        mode: '0755'
+    - name: Создаем директорию для монтирования образа
+      ansible.posix.mount:
+        path: /srv/repo
+        src: /dev/sr0
+        fstype: iso9660
+        opts: ro,noauto
+        state: present
+    - name: Копируем файлы с диска
+      ansible.builtin.copy:
+        src: /srv/repo/netinst/linux
+        dest: /srv/tftp/
+    - name: Копируем файлы с диска
+      ansible.builtin.copy:
+        src: /srv/repo/netinst/initrd.gz
+        dest: /srv/tftp/
+    - name: Копируем файлы
+      ansible.builtin.copy:
+        src: /usr/lib/PXELINUX/pxelinux.0
+        dest: /srv/tftp/
+    - name: Копируем файлы
+      ansible.builtin.copy:
+        src: /usr/lib/syslinux/modules/bios/ldlinux.c32
+        dest: /srv/tftp/
+    - name: Создаем директорию для pxelinux конфигурации
+      ansible.builtin.file:
+        path: /srv/tftp/pxelinux.cfg
+        state: directory
+        mode: '0755'
+    - name: Создаем pxelinux default файл
+      ansible.builtin.template:
+        src: "{{ playbook_dir }}/files/pxelinux.cfg_default.tpl"
+        dest: "/srv/tftp/pxelinux.cfg/default"
