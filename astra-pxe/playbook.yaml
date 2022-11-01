@@ -15,8 +15,15 @@
     dhcp_global_next_server: 192.168.0.3
     dhcp_global_filename: pxelinux.0
     dhcp6_enable: false
+    ansible_os_family: Debian
+    ansible_distribution: Debian
+    dhcp_global_server_state: stopped
 
     tftp_root_directory: /srv/tftp
+
+  pre_tasks:
+    - name: Update apt-get repo and cache
+      apt: update_cache=yes force_apt_get=yes cache_valid_time=3600
     
   roles:
     - bertvv.dhcp
@@ -30,26 +37,30 @@
     - name: Создаем директорию для монтирования образа
       ansible.posix.mount:
         path: /srv/repo
-        src: /dev/sr0
+        src: /dev/cdrom
         fstype: iso9660
-        opts: ro,noauto
-        state: present
+        opts: ro
+        state: remounted
     - name: Копируем файлы с диска
       ansible.builtin.copy:
         src: /srv/repo/netinst/linux
         dest: /srv/tftp/
+        remote_src: yes
     - name: Копируем файлы с диска
       ansible.builtin.copy:
         src: /srv/repo/netinst/initrd.gz
         dest: /srv/tftp/
+        remote_src: yes
     - name: Копируем файлы
       ansible.builtin.copy:
         src: /usr/lib/PXELINUX/pxelinux.0
         dest: /srv/tftp/
+        remote_src: yes
     - name: Копируем файлы
       ansible.builtin.copy:
         src: /usr/lib/syslinux/modules/bios/ldlinux.c32
         dest: /srv/tftp/
+        remote_src: yes
     - name: Создаем директорию для pxelinux конфигурации
       ansible.builtin.file:
         path: /srv/tftp/pxelinux.cfg
@@ -59,3 +70,21 @@
       ansible.builtin.template:
         src: "{{ playbook_dir }}/files/pxelinux.cfg_default.tpl"
         dest: "/srv/tftp/pxelinux.cfg/default"
+    - name: Создаем preseed  файл
+      ansible.builtin.template:
+        src: "{{ playbook_dir }}/files/preseed.cfg.tpl"
+        dest: "/srv/tftp/preseed.cfg.tpl"
+    - name: Устанавливаем необходимые сервисы
+      ansible.builtin.package:
+        name:
+          - isc-dhcp-server
+          - tftpd-hpa
+        state: latest
+    - name: Запускаем необходимые сервисы
+      ansible.builtin.service:
+        name: isc-dhcp-server
+        state: restarted
+    - name: Запускаем необходимые сервисы
+      ansible.builtin.service:
+        name: tftpd-hpa
+        state: restarted

@@ -1,5 +1,5 @@
 [astra-pxe]
-antonina ansible_host=192.168.30.76 ansible_connection=ssh ansible_user=ubuntu
+test ansible_host=192.168.1.8 ansible_connection=ssh ansible_user=nmishin
 
 [astra-pxe:vars]
 proxy=
